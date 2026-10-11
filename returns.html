@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Returns & Exchange - CF Foods and Beverages</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#28a745">
+</head>
+<body>
+  <div id="app">
+    <div id="content" style="display:none;">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+          <h5 class="mb-0">Returns & Exchange</h5>
+          <small class="text-muted">Refund or exchange products without deleting original sales</small>
+        </div>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#returnModal" onclick="openReturn()">
+          <i class="fas fa-undo me-1"></i> Process Return / Exchange
+        </button>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+          <div class="stat-card">
+            <div class="stat-label">Total Returns</div>
+            <div class="stat-value" id="sumCount">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="stat-card">
+            <div class="stat-label">Total Refunded</div>
+            <div class="stat-value text-danger" id="sumRefunded">₦0.00</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="stat-card">
+            <div class="stat-label">This Month</div>
+            <div class="stat-value" id="sumMonth">₦0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="card-header"><i class="fas fa-history me-2"></i>Return / Exchange History</div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Original Sale</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Processed By</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="8" class="text-center py-4 text-muted">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCESS RETURN / EXCHANGE MODAL -->
+  <div class="modal fade" id="returnModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Process Return / Exchange</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="returnAlert" class="alert d-none"></div>
+
+          <!-- Step 1: Find sale -->
+          <div id="stepSearch">
+            <label class="form-label fw-semibold">Search Original Receipt Number</label>
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" id="txnSearch" placeholder="e.g. SALE-20261004-0001">
+              <button class="btn btn-success" type="button" onclick="searchSale()">
+                <i class="fas fa-search me-1"></i> Find Sale
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Mode + Items -->
+          <div id="stepItems" class="d-none">
+            <div class="alert alert-info py-2 mb-3">
+              <strong>Sale:</strong> <span id="foundTxn"></span> &nbsp;|&nbsp;
+              <strong>Customer:</strong> <span id="foundCustomer"></span> &nbsp;|&nbsp;
+              <strong>Date:</strong> <span id="foundDate"></span>
+            </div>
+
+            <!-- Mode toggle -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">What do you want to do?</label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="mode" id="modeRefund" value="refund" checked>
+                <label class="btn btn-outline-danger" for="modeRefund">
+                  <i class="fas fa-money-bill me-1"></i> Refund only
+                </label>
+                <input type="radio" class="btn-check" name="mode" id="modeExchange" value="exchange">
+                <label class="btn btn-outline-primary" for="modeExchange">
+                  <i class="fas fa-exchange-alt me-1"></i> Exchange for another product
+                </label>
+              </div>
+            </div>
+
+            <!-- Return items -->
+            <p class="fw-semibold mb-2">1. Products being returned:</p>
+            <div class="table-responsive mb-3">
+              <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th>Product</th>
+                    <th>Sold Qty</th>
+                    <th>Unit Price</th>
+                    <th style="width:110px">Return Qty</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody id="itemsBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Exchange items (only for exchange mode) -->
+            <div id="exchangeSection" class="d-none">
+              <p class="fw-semibold mb-2">2. Products to give in exchange:</p>
+              <div class="input-group mb-2">
+                <select class="form-select" id="exchangeProductSelect">
+                  <option value="">— Select product —</option>
+                </select>
+                <input type="number" class="form-control" id="exchangeQty" value="1" min="1" style="max-width:90px;" placeholder="Qty">
+                <button class="btn btn-outline-primary" type="button" onclick="addExchangeItem()">
+                  <i class="fas fa-plus"></i> Add
+                </button>
+              </div>
+              <div class="table-responsive mb-3">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Unit Price</th>
+                      <th>Value</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="exchangeBody">
+                    <tr><td colspan="5" class="text-muted text-center">No exchange products added yet</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="alert alert-secondary py-2">
+                <div class="d-flex justify-content-between">
+                  <span>Return value:</span><strong id="returnValueDisplay">₦0.00</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span>Exchange value:</span><strong id="exchangeValueDisplay">₦0.00</strong>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                  <span class="fw-bold">Difference:</span>
+                  <strong id="differenceDisplay">₦0.00</strong>
+                </div>
+                <small class="text-muted" id="differenceNote"></small>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Reason</label>
+                <input type="text" class="form-control" id="returnReason" placeholder="e.g. Damaged, Wrong item, Customer changed mind">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" id="methodLabel">Refund Method</label>
+                <select class="form-select" id="refundMethod">
+                  <option value="cash">Cash</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="pos">POS</option>
+                  <option value="store_credit">Store Credit</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0" id="actionSummary">Total Refund: <span class="text-danger" id="totalRefundDisplay">₦0.00</span></h5>
+              <button class="btn btn-danger" id="processBtn" onclick="processAction()">
+                <i class="fas fa-check me-1"></i> <span id="processBtnText">Process Return</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="detailContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/returns.js"></script>
+  <script>
+    let currentSale = null;
+    let returnItems = [];
+    let exchangeCart = [];
+    let allProducts = [];
+    let currentMode = 'refund';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.init(['admin', 'manager']);
+      Layout.render('returns');
+      Layout.setPageTitle('Returns & Exchange');
+      allProducts = await Returns.loadProducts();
+      await load();
+
+      document.querySelectorAll('input[name="mode"]').forEach(el => {
+        el.addEventListener('change', () => {
+          currentMode = el.value;
+          document.getElementById('exchangeSection').classList.toggle('d-none', currentMode !== 'exchange');
+          document.getElementById('methodLabel').textContent = currentMode === 'exchange' ? 'Payment / Refund Method' : 'Refund Method';
+          document.getElementById('processBtnText').textContent = currentMode === 'exchange' ? 'Process Exchange' : 'Process Return';
+          document.getElementById('processBtn').className = currentMode === 'exchange' ? 'btn btn-primary' : 'btn btn-danger';
+          updateTotals();
+        });
+      });
+    });
+
+    async function load() {
+      await Returns.load();
+      renderTable(Returns.all);
+      updateSummary(Returns.all);
+    }
+
+    function updateSummary(list) {
+      document.getElementById('sumCount').textContent = list.length;
+      const total = list.reduce((s, x) => s + (x.totalRefund || 0), 0);
+      document.getElementById('sumRefunded').textContent = Returns.formatCurrency(total);
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthTotal = list.filter(x => {
+        const d = x.createdAt?.toDate ? x.createdAt.toDate() : new Date(x.createdAt);
+        return d >= monthStart;
+      }).reduce((s, x) => s + (x.totalRefund || 0), 0);
+      document.getElementById('sumMonth').textContent = Returns.formatCurrency(monthTotal);
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('tableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No returns yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(r => {
+        const type = r.type || 'refund';
+        const badge = type === 'exchange' ? 'bg-primary' : 'bg-danger';
+        const amount = type === 'exchange'
+          ? (r.difference > 0 ? 'Cust paid ' + Returns.formatCurrency(r.difference) : r.difference < 0 ? 'Refund ' + Returns.formatCurrency(Math.abs(r.difference)) : 'Even swap')
+          : Returns.formatCurrency(r.totalRefund);
+        return '<tr>' +
+          '<td class="fw-semibold">' + (r.returnNumber || '—') + '</td>' +
+          '<td><span class="badge ' + badge + '">' + type + '</span></td>' +
+          '<td class="small">' + Returns.formatDate(r.createdAt) + '</td>' +
+          '<td>' + (r.transactionNumber || '—') + '</td>' +
+          '<td>' + (r.customerName || '—') + '</td>' +
+          '<td>' + amount + '</td>' +
+          '<td class="small">' + (r.processedByName || '—') + '</td>' +
+          '<td><button class="btn btn-sm btn-outline-primary" onclick="viewReturn(\'' + r.id + '\')"><i class="fas fa-eye"></i></button></td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function openReturn() {
+      currentSale = null;
+      returnItems = [];
+      exchangeCart = [];
+      currentMode = 'refund';
+      document.getElementById('modeRefund').checked = true;
+      document.getElementById('txnSearch').value = '';
+      document.getElementById('stepSearch').classList.remove('d-none');
+      document.getElementById('stepItems').classList.add('d-none');
+      document.getElementById('exchangeSection').classList.add('d-none');
+      document.getElementById('returnAlert').classList.add('d-none');
+      document.getElementById('returnReason').value = '';
+      document.getElementById('processBtnText').textContent = 'Process Return';
+      document.getElementById('processBtn').className = 'btn btn-danger';
+    }
+
+    async function searchSale() {
+      const txn = document.getElementById('txnSearch').value.trim();
+      if (!txn) return alert('Enter a receipt number');
+      const alertBox = document.getElementById('returnAlert');
+      alertBox.classList.add('d-none');
+
+      const sale = await Returns.findSaleByTransactionNumber(txn);
+      if (!sale) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = 'Sale not found. Check the receipt number.';
+        alertBox.classList.remove('d-none');
+        return;
+      }
+
+      currentSale = sale;
+      const items = sale.items || [];
+      returnItems = items.map(i => ({
+        productId: i.productId,
+        productName: i.productName,
+        maxQty: i.quantity,
+        unitPrice: i.unitPrice || (i.total / i.quantity),
+        returnQty: 0
+      }));
+
+      document.getElementById('foundTxn').textContent = sale.transactionNumber;
+      document.getElementById('foundCustomer').textContent = sale.customerName || 'Walk-in';
+      document.getElementById('foundDate').textContent = Returns.formatDate(sale.createdAt);
+
+      document.getElementById('itemsBody').innerHTML = returnItems.map((item, idx) =>
+        '<tr><td>' + item.productName + '</td><td>' + item.maxQty + '</td><td>' + Returns.formatCurrency(item.unitPrice) +
+        '</td><td><input type="number" class="form-control form-control-sm" min="0" max="' + item.maxQty +
+        '" value="0" onchange="updateReturnQty(' + idx + ', this.value)"></td><td id="refund-' + idx + '">₦0.00</td></tr>'
+      ).join('');
+
+      // Populate exchange product select
+      document.getElementById('exchangeProductSelect').innerHTML =
+        '<option value="">— Select product —</option>' +
+        allProducts.filter(p => (p.quantity || 0) > 0).map(p =>
+          '<option value="' + p.id + '" data-price="' + (p.sellingPrice || 0) + '" data-stock="' + (p.quantity || 0) + '">' +
+          p.name + ' (₦' + (p.sellingPrice || 0) + ' · stock: ' + (p.quantity || 0) + ')</option>'
+        ).join('');
+
+      exchangeCart = [];
+      renderExchangeCart();
+      document.getElementById('stepSearch').classList.add('d-none');
+      document.getElementById('stepItems').classList.remove('d-none');
+      updateTotals();
+    }
+
+    function updateReturnQty(idx, val) {
+      const qty = parseInt(val) || 0;
+      returnItems[idx].returnQty = Math.min(qty, returnItems[idx].maxQty);
+      document.getElementById('refund-' + idx).textContent =
+        Returns.formatCurrency(returnItems[idx].returnQty * returnItems[idx].unitPrice);
+      updateTotals();
+    }
+
+    function addExchangeItem() {
+      const sel = document.getElementById('exchangeProductSelect');
+      const id = sel.value;
+      if (!id) return alert('Select a product');
+      const opt = sel.options[sel.selectedIndex];
+      const price = parseFloat(opt.getAttribute('data-price')) || 0;
+      const stock = parseInt(opt.getAttribute('data-stock')) || 0;
+      const qty = parseInt(document.getElementById('exchangeQty').value) || 1;
+      if (qty > stock) return alert('Only ' + stock + ' in stock');
+
+      const existing = exchangeCart.find(i => i.productId === id);
+      if (existing) {
+        existing.quantity += qty;
+      } else {
+        exchangeCart.push({
+          productId: id,
+          productName: opt.text.split(' (')[0],
+          quantity: qty,
+          unitPrice: price,
+          maxStock: stock
+        });
+      }
+      renderExchangeCart();
+      updateTotals();
+      sel.value = '';
+      document.getElementById('exchangeQty').value = 1;
+    }
+
+    function removeExchangeItem(productId) {
+      exchangeCart = exchangeCart.filter(i => i.productId !== productId);
+      renderExchangeCart();
+      updateTotals();
+    }
+
+    function renderExchangeCart() {
+      const tbody = document.getElementById('exchangeBody');
+      if (exchangeCart.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No exchange products added yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = exchangeCart.map(i =>
+        '<tr><td>' + i.productName + '</td><td>' + i.quantity + '</td><td>' + Returns.formatCurrency(i.unitPrice) +
+        '</td><td>' + Returns.formatCurrency(i.quantity * i.unitPrice) +
+        '</td><td><button class="btn btn-sm btn-outline-danger" onclick="removeExchangeItem(\'' + i.productId + '\')"><i class="fas fa-times"></i></button></td></tr>'
+      ).join('');
+    }
+
+    function updateTotals() {
+      const returnValue = returnItems.reduce((s, i) => s + (i.returnQty * i.unitPrice), 0);
+      const exchangeValue = exchangeCart.reduce((s, i) => s + (i.quantity * i.unitPrice), 0);
+      const difference = exchangeValue - returnValue;
+
+      document.getElementById('totalRefundDisplay').textContent = Returns.formatCurrency(returnValue);
+      document.getElementById('returnValueDisplay').textContent = Returns.formatCurrency(returnValue);
+      document.getElementById('exchangeValueDisplay').textContent = Returns.formatCurrency(exchangeValue);
+      document.getElementById('differenceDisplay').textContent = Returns.formatCurrency(Math.abs(difference));
+      document.getElementById('differenceDisplay').className = difference > 0 ? 'text-primary' : (difference < 0 ? 'text-danger' : '');
+
+      if (currentMode === 'exchange') {
+        if (difference > 0) {
+          document.getElementById('differenceNote').textContent = 'Customer needs to PAY this difference';
+          document.getElementById('actionSummary').innerHTML = 'Customer pays: <span class="text-primary">' + Returns.formatCurrency(difference) + '</span>';
+        } else if (difference < 0) {
+          document.getElementById('differenceNote').textContent = 'Refund this amount to customer';
+          document.getElementById('actionSummary').innerHTML = 'Refund customer: <span class="text-danger">' + Returns.formatCurrency(Math.abs(difference)) + '</span>';
+        } else {
+          document.getElementById('differenceNote').textContent = 'Even swap – no money changes hands';
+          document.getElementById('actionSummary').innerHTML = '<span class="text-success">Even swap</span>';
+        }
+      } else {
+        document.getElementById('actionSummary').innerHTML = 'Total Refund: <span class="text-danger" id="totalRefundDisplay">' + Returns.formatCurrency(returnValue) + '</span>';
+      }
+    }
+
+    async function processAction() {
+      if (!currentSale) return;
+      const btn = document.getElementById('processBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
+
+      let result;
+      if (currentMode === 'exchange') {
+        result = await Returns.processExchange({
+          saleId: currentSale.id,
+          transactionNumber: currentSale.transactionNumber,
+          customerId: currentSale.customerId,
+          customerName: currentSale.customerName,
+          returnItems: returnItems,
+          exchangeItems: exchangeCart,
+          reason: document.getElementById('returnReason').value,
+          paymentMethod: document.getElementById('refundMethod').value
+        });
+      } else {
+        result = await Returns.processReturn({
+          saleId: currentSale.id,
+          transactionNumber: currentSale.transactionNumber,
+          customerId: currentSale.customerId,
+          customerName: currentSale.customerName,
+          items: returnItems,
+          reason: document.getElementById('returnReason').value,
+          refundMethod: document.getElementById('refundMethod').value
+        });
+      }
+
+      const alertBox = document.getElementById('returnAlert');
+      alertBox.className = 'alert alert-' + (result.success ? 'success' : 'danger');
+      alertBox.textContent = result.message;
+      alertBox.classList.remove('d-none');
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check me-1"></i> <span id="processBtnText">' +
+        (currentMode === 'exchange' ? 'Process Exchange' : 'Process Return') + '</span>';
+
+      if (result.success) {
+        await load();
+        setTimeout(() => {
+          bootstrap.Modal.getInstance(document.getElementById('returnModal'))?.hide();
+        }, 1500);
+      }
+    }
+
+    function viewReturn(id) {
+      const r = Returns.all.find(x => x.id === id);
+      if (!r) return;
+      const items = r.items || [];
+      const exchangeItems = r.exchangeItems || [];
+      let html = '<p class="mb-1"><strong>Number:</strong> ' + r.returnNumber + '</p>' +
+        '<p class="mb-1"><strong>Type:</strong> ' + (r.type || 'refund') + '</p>' +
+        '<p class="mb-1"><strong>Original Sale:</strong> ' + r.transactionNumber + '</p>' +
+        '<p class="mb-1"><strong>Customer:</strong> ' + r.customerName + '</p>' +
+        '<p class="mb-1"><strong>Date:</strong> ' + Returns.formatDate(r.createdAt) + '</p>' +
+        '<p class="mb-1"><strong>Reason:</strong> ' + (r.reason || '—') + '</p>' +
+        '<p class="mb-1"><strong>Processed By:</strong> ' + r.processedByName + '</p>';
+
+      html += '<h6 class="mt-3">Returned Products</h6><table class="table table-sm"><thead><tr><th>Product</th><th>Qty</th><th>Value</th></tr></thead><tbody>';
+      items.forEach(i => {
+        html += '<tr><td>' + i.productName + '</td><td>' + i.quantity + '</td><td>' + Returns.formatCurrency(i.refundAmount) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+
+      if (exchangeItems.length > 0) {
+        html += '<h6 class="mt-3">Given in Exchange</h6><table class="table table-sm"><thead><tr><th>Product</th><th>Qty</th><th>Value</th></tr></thead><tbody>';
+        exchangeItems.forEach(i => {
+          html += '<tr><td>' + i.productName + '</td><td>' + i.quantity + '</td><td>' + Returns.formatCurrency(i.amount) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        html += '<p class="mt-2"><strong>Difference:</strong> ' +
+          (r.difference > 0 ? 'Customer paid ' + Returns.formatCurrency(r.difference) :
+           r.difference < 0 ? 'Refunded ' + Returns.formatCurrency(Math.abs(r.difference)) : 'Even swap') + '</p>';
+      } else {
+        html += '<p class="mt-2"><strong>Total Refund:</strong> <span class="text-danger fw-bold">' + Returns.formatCurrency(r.totalRefund) + '</span></p>';
+      }
+
+      document.getElementById('detailContent').innerHTML = html;
+      new bootstrap.Modal(document.getElementById('detailModal')).show();
+    }
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

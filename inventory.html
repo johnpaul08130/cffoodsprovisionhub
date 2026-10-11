@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory - CF Food and Beverages</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#28a745">
+</head>
+<body>
+  <div id="app">
+    <div id="content" style="display:none;">
+      <!-- Header -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+          <h5 class="mb-0">Inventory Management</h5>
+          <small class="text-muted">Stock in, stock out, adjustments & history</small>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#movementModal" onclick="openMovement('stock_in')">
+            <i class="fas fa-plus-circle me-1"></i> Stock In
+          </button>
+          <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#movementModal" onclick="openMovement('stock_out')">
+            <i class="fas fa-minus-circle me-1"></i> Stock Out
+          </button>
+          <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#movementModal" onclick="openMovement('adjustment')">
+            <i class="fas fa-sliders-h me-1"></i> Adjustment
+          </button>
+          <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#movementModal" onclick="openMovement('damage')">
+            <i class="fas fa-heart-broken me-1"></i> Damaged
+          </button>
+          <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#movementModal" onclick="openMovement('expiry')">
+            <i class="fas fa-calendar-times me-1"></i> Expired
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value" id="statTotal">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Low Stock</div>
+            <div class="stat-value text-warning" id="statLow">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Out of Stock</div>
+            <div class="stat-value text-danger" id="statOut">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Expiring (30 days)</div>
+            <div class="stat-value text-info" id="statExpiring">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <ul class="nav nav-tabs mb-3" id="invTabs">
+        <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#tabStock">Current Stock</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#tabHistory">Movement History</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#tabLow">Low / Out of Stock</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#tabExpiry">Expiry Alerts</a>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- Current Stock -->
+        <div class="tab-pane fade show active" id="tabStock">
+          <div class="table-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-boxes me-2"></i>Current Stock Levels</span>
+              <input type="text" class="form-control form-control-sm" id="searchStock" 
+                     placeholder="Search products..." style="max-width:220px;">
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Quantity</th>
+                    <th>Min Stock</th>
+                    <th>Status</th>
+                    <th>Value (Cost)</th>
+                  </tr>
+                </thead>
+                <tbody id="stockTableBody">
+                  <tr><td colspan="7" class="text-center py-4 text-muted">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Movement History -->
+        <div class="tab-pane fade" id="tabHistory">
+          <div class="table-card">
+            <div class="card-header">
+              <i class="fas fa-history me-2"></i>Recent Inventory Movements
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th>Previous</th>
+                    <th>Change</th>
+                    <th>New Qty</th>
+                    <th>Reason</th>
+                    <th>By</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                  <tr><td colspan="8" class="text-center py-4 text-muted">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Low / Out of Stock -->
+        <div class="tab-pane fade" id="tabLow">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="table-card">
+                <div class="card-header bg-warning bg-opacity-10">
+                  <i class="fas fa-exclamation-triangle text-warning me-2"></i>Low Stock
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead><tr><th>Product</th><th>Qty</th><th>Min</th></tr></thead>
+                    <tbody id="lowStockBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="table-card">
+                <div class="card-header bg-danger bg-opacity-10">
+                  <i class="fas fa-times-circle text-danger me-2"></i>Out of Stock
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead><tr><th>Product</th><th>Qty</th></tr></thead>
+                    <tbody id="outStockBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expiry Alerts -->
+        <div class="tab-pane fade" id="tabExpiry">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="table-card">
+                <div class="card-header bg-danger bg-opacity-10">
+                  <i class="fas fa-calendar-times text-danger me-2"></i>Already Expired
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead><tr><th>Product</th><th>Expiry Date</th><th>Qty</th></tr></thead>
+                    <tbody id="expiredBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="table-card">
+                <div class="card-header bg-warning bg-opacity-10">
+                  <i class="fas fa-clock text-warning me-2"></i>Expiring within 30 days
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead><tr><th>Product</th><th>Expiry Date</th><th>Qty</th><th>Days Left</th></tr></thead>
+                    <tbody id="expiringBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MOVEMENT MODAL ==================== -->
+  <div class="modal fade" id="movementModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="movementModalTitle">Stock Movement</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="movementAlert" class="alert d-none"></div>
+          <form id="movementForm">
+            <input type="hidden" id="movementType">
+            <div class="mb-3">
+              <label class="form-label">Product *</label>
+              <select class="form-select" id="movementProduct" required>
+                <option value="">— Select Product —</option>
+              </select>
+              <div class="form-text" id="currentQtyInfo"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" id="qtyLabel">Quantity *</label>
+              <input type="number" class="form-control" id="movementQty" min="1" required>
+              <div class="form-text" id="qtyHelp"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Reason / Notes</label>
+              <textarea class="form-control" id="movementReason" rows="2" placeholder="Optional notes..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success" id="saveMovementBtn">
+            <i class="fas fa-check me-1"></i> Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/inventory.js"></script>
+  <script>
+    let currentMovementType = 'stock_in';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.init(); // cashiers can view, managers/admins can adjust
+      Layout.render('inventory');
+      Layout.setPageTitle('Inventory');
+      await loadAll();
+    });
+
+    async function loadAll() {
+      try {
+        await Inventory.loadProducts();
+        await Inventory.loadMovements(150);
+        renderStock();
+        renderHistory();
+        renderLowOut();
+        renderExpiry();
+        updateStats();
+        populateProductSelect();
+      } catch (error) {
+        console.error(error);
+        alert('Failed to load inventory data.');
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('statTotal').textContent = Inventory.products.length;
+      document.getElementById('statLow').textContent = Inventory.getLowStockProducts().length;
+      document.getElementById('statOut').textContent = Inventory.getOutOfStockProducts().length;
+      document.getElementById('statExpiring').textContent = Inventory.getExpiringProducts(30).length;
+    }
+
+    function populateProductSelect() {
+      const select = document.getElementById('movementProduct');
+      select.innerHTML = '<option value="">— Select Product —</option>' +
+        Inventory.products.map(p => 
+          `<option value="${p.id}" data-qty="${p.quantity || 0}" data-unit="${p.unit || 'pcs'}">
+            ${p.name} (${p.quantity || 0} ${p.unit || 'pcs'})
+          </option>`
+        ).join('');
+    }
+
+    function renderStock(filter = '') {
+      let list = Inventory.products;
+      if (filter) {
+        const q = filter.toLowerCase();
+        list = list.filter(p => (p.name || '').toLowerCase().includes(q));
+      }
+      const tbody = document.getElementById('stockTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No products</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(p => {
+        const qty = p.quantity || 0;
+        const min = p.minimumStock || 10;
+        let badge = '<span class="badge bg-success">In Stock</span>';
+        if (qty <= 0) badge = '<span class="badge bg-danger">Out of Stock</span>';
+        else if (qty <= min) badge = '<span class="badge bg-warning text-dark">Low Stock</span>';
+
+        return `
+          <tr>
+            <td class="fw-semibold">${p.name}</td>
+            <td>${p.categoryName || '—'}</td>
+            <td>${p.unit || 'pcs'}</td>
+            <td class="fw-bold">${qty}</td>
+            <td>${min}</td>
+            <td>${badge}</td>
+            <td>${Inventory.formatCurrency((p.costPrice || 0) * qty)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('searchStock').addEventListener('input', (e) => {
+      renderStock(e.target.value);
+    });
+
+    function renderHistory() {
+      const tbody = document.getElementById('historyTableBody');
+      if (Inventory.allMovements.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No movements yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = Inventory.allMovements.map(m => {
+        const changeClass = m.quantityChanged > 0 ? 'text-success' : 'text-danger';
+        const changeSign = m.quantityChanged > 0 ? '+' : '';
+        return `
+          <tr>
+            <td class="small">${Inventory.formatDateTime(m.timestamp)}</td>
+            <td>${m.productName || '—'}</td>
+            <td><span class="badge bg-${Inventory.getMovementBadge(m.movementType)}">${m.movementType}</span></td>
+            <td>${m.previousQuantity}</td>
+            <td class="${changeClass} fw-semibold">${changeSign}${m.quantityChanged}</td>
+            <td class="fw-bold">${m.newQuantity}</td>
+            <td class="small">${m.reason || '—'}</td>
+            <td class="small">${m.userName || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderLowOut() {
+      const low = Inventory.getLowStockProducts();
+      const out = Inventory.getOutOfStockProducts();
+
+      document.getElementById('lowStockBody').innerHTML = low.length
+        ? low.map(p => `<tr><td>${p.name}</td><td class="text-warning fw-bold">${p.quantity}</td><td>${p.minimumStock || 10}</td></tr>`).join('')
+        : '<tr><td colspan="3" class="text-muted text-center">None</td></tr>';
+
+      document.getElementById('outStockBody').innerHTML = out.length
+        ? out.map(p => `<tr><td>${p.name}</td><td class="text-danger fw-bold">0</td></tr>`).join('')
+        : '<tr><td colspan="2" class="text-muted text-center">None</td></tr>';
+    }
+
+    function renderExpiry() {
+      const expired = Inventory.getExpiredProducts();
+      const expiring = Inventory.getExpiringProducts(30);
+      const now = new Date();
+
+      document.getElementById('expiredBody').innerHTML = expired.length
+        ? expired.map(p => {
+            const d = p.expiryDate.toDate ? p.expiryDate.toDate() : new Date(p.expiryDate);
+            return `<tr><td>${p.name}</td><td class="text-danger">${d.toLocaleDateString('en-NG')}</td><td>${p.quantity || 0}</td></tr>`;
+          }).join('')
+        : '<tr><td colspan="3" class="text-muted text-center">None</td></tr>';
+
+      document.getElementById('expiringBody').innerHTML = expiring.length
+        ? expiring.map(p => {
+            const d = p.expiryDate.toDate ? p.expiryDate.toDate() : new Date(p.expiryDate);
+            const days = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+            return `<tr><td>${p.name}</td><td>${d.toLocaleDateString('en-NG')}</td><td>${p.quantity || 0}</td><td class="text-warning fw-bold">${days}d</td></tr>`;
+          }).join('')
+        : '<tr><td colspan="4" class="text-muted text-center">None</td></tr>';
+    }
+
+    // Movement Modal
+    function openMovement(type) {
+      currentMovementType = type;
+      document.getElementById('movementType').value = type;
+      document.getElementById('movementForm').reset();
+      document.getElementById('movementAlert').classList.add('d-none');
+      document.getElementById('currentQtyInfo').textContent = '';
+
+      const titles = {
+        stock_in: 'Stock In (Receive Goods)',
+        stock_out: 'Stock Out (Issue Goods)',
+        adjustment: 'Stock Adjustment (Set Exact Quantity)',
+        damage: 'Record Damaged Goods',
+        expiry: 'Record Expired Goods'
+      };
+      document.getElementById('movementModalTitle').textContent = titles[type] || 'Stock Movement';
+
+      if (type === 'adjustment') {
+        document.getElementById('qtyLabel').textContent = 'New Quantity *';
+        document.getElementById('qtyHelp').textContent = 'Enter the correct physical count of this product.';
+      } else {
+        document.getElementById('qtyLabel').textContent = 'Quantity *';
+        document.getElementById('qtyHelp').textContent = '';
+      }
+    }
+
+    document.getElementById('movementProduct').addEventListener('change', function () {
+      const opt = this.options[this.selectedIndex];
+      if (opt && opt.value) {
+        const qty = opt.getAttribute('data-qty');
+        const unit = opt.getAttribute('data-unit');
+        document.getElementById('currentQtyInfo').textContent = `Current stock: ${qty} ${unit}`;
+      } else {
+        document.getElementById('currentQtyInfo').textContent = '';
+      }
+    });
+
+    document.getElementById('saveMovementBtn').addEventListener('click', async () => {
+      const productId = document.getElementById('movementProduct').value;
+      const qty = document.getElementById('movementQty').value;
+      const reason = document.getElementById('movementReason').value.trim();
+      const alertBox = document.getElementById('movementAlert');
+
+      if (!productId || !qty) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = 'Please select a product and enter quantity.';
+        alertBox.classList.remove('d-none');
+        return;
+      }
+
+      const btn = document.getElementById('saveMovementBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
+
+      const result = await Inventory.performMovement({
+        productId,
+        quantityChanged: qty,
+        movementType: currentMovementType,
+        reason
+      });
+
+      alertBox.className = `alert alert-${result.success ? 'success' : 'danger'}`;
+      alertBox.textContent = result.message;
+      alertBox.classList.remove('d-none');
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check me-1"></i> Confirm';
+
+      if (result.success) {
+        await loadAll();
+        setTimeout(() => {
+          bootstrap.Modal.getInstance(document.getElementById('movementModal'))?.hide();
+        }, 800);
+      }
+    });
+  </script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").then(function(reg) {
+      console.log("SW registered", reg.scope);
+    }).catch(function(err) {
+      console.log("SW registration failed", err);
+    });
+  }
+</script>
+</body>
+</html>

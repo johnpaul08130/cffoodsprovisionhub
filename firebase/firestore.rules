@@ -1,0 +1,193 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveUser() {
+      return isAuthenticated() && userDoc().status == 'active';
+    }
+
+    function hasRole(role) {
+      return isActiveUser() && userDoc().role == role;
+    }
+
+    function hasAnyRole(roles) {
+      return isActiveUser() && userDoc().role in roles;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isManagerOrAdmin() {
+      return hasAnyRole(['admin', 'manager']);
+    }
+
+    function isCashierOrAbove() {
+      return hasAnyRole(['admin', 'manager', 'cashier']);
+    }
+
+    // ============================================================
+    // USERS
+    // ============================================================
+    match /users/{userId} {
+      // Anyone authenticated can read their own profile
+      // Admins can read all users
+      allow read: if isActiveUser() && (request.auth.uid == userId || isAdmin());
+
+      // Only admins can create users
+      allow create: if isAdmin();
+
+      // Users can update their own profile (limited fields)
+      // Admins can update any user
+      allow update: if isActiveUser() && (
+        (request.auth.uid == userId && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'uid', 'email', 'createdAt', 'createdBy']))
+        || isAdmin()
+      );
+
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // SETTINGS (single document: settings/business)
+    // ============================================================
+    match /settings/{docId} {
+      allow read: if isCashierOrAbove();
+      allow write: if isAdmin();
+    }
+
+    // ============================================================
+    // CATEGORIES
+    // ============================================================
+    match /categories/{categoryId} {
+      allow read: if isCashierOrAbove();
+      allow create, update: if isManagerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // PRODUCTS
+    // ============================================================
+    match /products/{productId} {
+      allow read: if isCashierOrAbove();
+      allow create, update: if isManagerOrAdmin();
+      // Cashiers cannot delete products
+      allow delete: if isManagerOrAdmin();
+    }
+
+    // ============================================================
+    // CUSTOMERS
+    // ============================================================
+    match /customers/{customerId} {
+      allow read: if isCashierOrAbove();
+      allow create, update: if isCashierOrAbove();
+      allow delete: if isManagerOrAdmin();
+    }
+
+    // ============================================================
+    // SUPPLIERS
+    // ============================================================
+    match /suppliers/{supplierId} {
+      allow read: if isManagerOrAdmin();
+      allow create, update: if isManagerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // SALES
+    // ============================================================
+    match /sales/{saleId} {
+      allow read: if isCashierOrAbove();
+      // Cashiers and above can create sales
+      allow create: if isCashierOrAbove();
+      // Only managers/admins can update or delete sales (corrections)
+      allow update: if isManagerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // SALE ITEMS (subcollection or top-level)
+    // ============================================================
+    match /sale_items/{itemId} {
+      allow read: if isCashierOrAbove();
+      allow create: if isCashierOrAbove();
+      allow update, delete: if isManagerOrAdmin();
+    }
+
+    // ============================================================
+    // PURCHASES
+    // ============================================================
+    match /purchases/{purchaseId} {
+      allow read: if isManagerOrAdmin();
+      allow create, update: if isManagerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /purchase_items/{itemId} {
+      allow read: if isManagerOrAdmin();
+      allow create, update: if isManagerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // INVENTORY MOVEMENTS
+    // ============================================================
+    match /inventory_movements/{movementId} {
+      allow read: if isCashierOrAbove();
+      allow create: if isCashierOrAbove();
+      // Movements should generally not be edited/deleted
+      allow update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // EXPENSES
+    // ============================================================
+    match /expenses/{expenseId} {
+      allow read: if isManagerOrAdmin();
+      allow create, update: if isManagerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // RETURNS
+    // ============================================================
+    match /returns/{returnId} {
+      allow read: if isManagerOrAdmin();
+      allow create, update: if isManagerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // AUDIT LOGS
+    // ============================================================
+    match /audit_logs/{logId} {
+      // Anyone authenticated can create logs
+      allow create: if isAuthenticated();
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+      // No one can update or delete audit logs
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // DEFAULT DENY
+    // ============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

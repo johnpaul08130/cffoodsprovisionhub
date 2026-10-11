@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - CF Foods and Beverages</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#28a745">
+</head>
+<body>
+  <div id="app">
+    <div id="content" style="display:none;">
+      <!-- Welcome -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+          <h5 class="mb-0">Welcome, <span data-user-name>User</span></h5>
+          <small class="text-muted">CF Foods and Beverages • Live overview</small>
+        </div>
+        <div>
+          <span class="badge bg-success" data-user-role>ROLE</span>
+          <button class="btn btn-sm btn-outline-secondary ms-2" onclick="refreshDashboard()">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Stats -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between">
+              <div>
+                <div class="stat-label">Today's Sales</div>
+                <div class="stat-value text-success" id="statTodayRevenue">₦0.00</div>
+                <small class="text-muted" id="statTodayCount">0 transactions</small>
+              </div>
+              <div class="stat-icon bg-success bg-opacity-10 text-success">
+                <i class="fas fa-cash-register"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between">
+              <div>
+                <div class="stat-label">Today's Profit</div>
+                <div class="stat-value text-primary" id="statTodayProfit">₦0.00</div>
+              </div>
+              <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                <i class="fas fa-chart-line"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between">
+              <div>
+                <div class="stat-label">This Week</div>
+                <div class="stat-value" id="statWeekRevenue">₦0.00</div>
+                <small class="text-muted" id="statWeekCount">0 sales</small>
+              </div>
+              <div class="stat-icon bg-info bg-opacity-10 text-info">
+                <i class="fas fa-calendar-week"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between">
+              <div>
+                <div class="stat-label">This Month</div>
+                <div class="stat-value" id="statMonthRevenue">₦0.00</div>
+                <small class="text-muted" id="statMonthCount">0 sales</small>
+              </div>
+              <div class="stat-icon bg-secondary bg-opacity-10 text-secondary">
+                <i class="fas fa-calendar-alt"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second row -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Products</div>
+            <div class="stat-value" id="statProducts">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Low Stock</div>
+            <div class="stat-value text-warning" id="statLowStock">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Out of Stock</div>
+            <div class="stat-value text-danger" id="statOutStock">0</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Outstanding Balances</div>
+            <div class="stat-value text-danger" id="statOutstanding">₦0.00</div>
+            <small class="text-muted" id="statOutstandingCount">0 sales</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <!-- Sales by Cashier (Today) -->
+        <div class="col-md-6">
+          <div class="table-card h-100">
+            <div class="card-header">
+              <i class="fas fa-user-tie me-2"></i>Today's Sales by Cashier
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th>Cashier</th>
+                    <th>Sales</th>
+                    <th>Revenue</th>
+                    <th>Profit</th>
+                  </tr>
+                </thead>
+                <tbody id="cashierTable">
+                  <tr><td colspan="4" class="text-center text-muted py-3">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outstanding Balances -->
+        <div class="col-md-6">
+          <div class="table-card h-100">
+            <div class="card-header d-flex justify-content-between">
+              <span><i class="fas fa-exclamation-circle text-danger me-2"></i>Outstanding Balances</span>
+              <a href="sales.html" class="small">View all</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th>Receipt</th>
+                    <th>Customer</th>
+                    <th>Balance</th>
+                  </tr>
+                </thead>
+                <tbody id="outstandingTable">
+                  <tr><td colspan="3" class="text-center text-muted py-3">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="table-card mb-4">
+        <div class="card-header d-flex justify-content-between">
+          <span><i class="fas fa-receipt me-2"></i>Recent Transactions</span>
+          <a href="sales.html" class="small">View all sales</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Receipt #</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Cashier</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Balance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="recentTable">
+              <tr><td colspan="8" class="text-center text-muted py-3">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="table-card">
+        <div class="card-header"><i class="fas fa-bolt me-2"></i>Quick Actions</div>
+        <div class="p-3">
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <a href="pos.html" class="btn btn-success w-100 py-3">
+                <i class="fas fa-cash-register fa-lg d-block mb-1"></i> Open POS
+              </a>
+            </div>
+            <div class="col-6 col-md-3">
+              <a href="products.html" class="btn btn-outline-success w-100 py-3">
+                <i class="fas fa-box fa-lg d-block mb-1"></i> Products
+              </a>
+            </div>
+            <div class="col-6 col-md-3">
+              <a href="sales.html" class="btn btn-outline-primary w-100 py-3">
+                <i class="fas fa-chart-bar fa-lg d-block mb-1"></i> Sales History
+              </a>
+            </div>
+            <div class="col-6 col-md-3">
+              <a href="inventory.html" class="btn btn-outline-secondary w-100 py-3">
+                <i class="fas fa-warehouse fa-lg d-block mb-1"></i> Inventory
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.init();
+      Layout.render('dashboard');
+      Layout.setPageTitle('Dashboard');
+      await refreshDashboard();
+    });
+
+    async function refreshDashboard() {
+      try {
+        const data = await Dashboard.load();
+
+        // Main stats
+        document.getElementById('statTodayRevenue').textContent = Dashboard.formatCurrency(data.today.revenue);
+        document.getElementById('statTodayCount').textContent = data.today.count + ' transactions';
+        document.getElementById('statTodayProfit').textContent = Dashboard.formatCurrency(data.today.profit);
+        document.getElementById('statWeekRevenue').textContent = Dashboard.formatCurrency(data.week.revenue);
+        document.getElementById('statWeekCount').textContent = data.week.count + ' sales';
+        document.getElementById('statMonthRevenue').textContent = Dashboard.formatCurrency(data.month.revenue);
+        document.getElementById('statMonthCount').textContent = data.month.count + ' sales';
+
+        document.getElementById('statProducts').textContent = data.products.total;
+        document.getElementById('statLowStock').textContent = data.products.lowStock;
+        document.getElementById('statOutStock').textContent = data.products.outStock;
+        document.getElementById('statOutstanding').textContent = Dashboard.formatCurrency(data.outstanding.total);
+        document.getElementById('statOutstandingCount').textContent = data.outstanding.count + ' sales';
+
+        // Cashier table
+        const cashierBody = document.getElementById('cashierTable');
+        if (data.cashierStats.length === 0) {
+          cashierBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No sales today yet</td></tr>';
+        } else {
+          cashierBody.innerHTML = data.cashierStats.map(c => `
+            <tr>
+              <td class="fw-semibold">${c.name}</td>
+              <td>${c.count}</td>
+              <td class="text-success">${Dashboard.formatCurrency(c.total)}</td>
+              <td>${Dashboard.formatCurrency(c.profit)}</td>
+            </tr>
+          `).join('');
+        }
+
+        // Outstanding
+        const outBody = document.getElementById('outstandingTable');
+        if (data.outstanding.list.length === 0) {
+          outBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">No outstanding balances</td></tr>';
+        } else {
+          outBody.innerHTML = data.outstanding.list.map(s => `
+            <tr>
+              <td class="small">${s.transactionNumber || '—'}</td>
+              <td>${s.customerName || '—'}</td>
+              <td class="text-danger fw-bold">${Dashboard.formatCurrency(s.balance)}</td>
+            </tr>
+          `).join('');
+        }
+
+        // Recent sales
+        const recentBody = document.getElementById('recentTable');
+        if (data.recentSales.length === 0) {
+          recentBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No sales yet</td></tr>';
+        } else {
+          recentBody.innerHTML = data.recentSales.map(s => {
+            const bal = s.balance || 0;
+            const status = s.paymentStatus || (bal > 0 ? 'partial' : 'paid');
+            const badge = status === 'paid' ? 'bg-success' : (status === 'partial' ? 'bg-warning text-dark' : 'bg-danger');
+            return `
+              <tr>
+                <td class="fw-semibold small">${s.transactionNumber || '—'}</td>
+                <td class="small">${Dashboard.formatDate(s.createdAt)}</td>
+                <td>${s.customerName || 'Walk-in'}</td>
+                <td>${s.cashierName || '—'}</td>
+                <td>${Dashboard.formatCurrency(s.totalAmount)}</td>
+                <td>${Dashboard.formatCurrency(s.amountPaid)}</td>
+                <td class="${bal > 0 ? 'text-danger fw-bold' : ''}">${Dashboard.formatCurrency(bal)}</td>
+                <td><span class="badge ${badge}">${status}</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+        alert('Failed to load dashboard data. Check your connection.');
+      }
+    }
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

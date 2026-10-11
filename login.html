@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - CF Foods and Beverages</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#28a745">
+  <style>
+    body {
+      background: linear-gradient(145deg, #0f2a1c 0%, #1a3a2a 40%, #2d5a3d 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 1rem;
+    }
+    .login-card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.35);
+      max-width: 420px;
+      width: 100%;
+      padding: 2.25rem 2rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #28a745, #f0a500, #28a745);
+    }
+    .logo-wrap {
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+    .logo-wrap img {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+      border-radius: 50%;
+      box-shadow: 0 8px 24px rgba(40,167,69,0.2);
+      background: #fff;
+    }
+    .store-name {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1a3a2a;
+      margin: 0.75rem 0 0.15rem;
+      letter-spacing: -0.3px;
+    }
+    .store-meta {
+      font-size: 0.8rem;
+      color: #6c757d;
+      line-height: 1.4;
+    }
+    .btn-login {
+      background: linear-gradient(135deg, #28a745, #1e7e34);
+      border: none;
+      padding: 13px;
+      font-weight: 600;
+      border-radius: 12px;
+      width: 100%;
+      color: white;
+      font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(40,167,69,0.35);
+      color: white;
+    }
+    .btn-login:disabled {
+      opacity: 0.7;
+      transform: none;
+    }
+    .form-control {
+      border-radius: 12px;
+      padding: 12px 15px;
+      border: 1.5px solid #e0e0e0;
+    }
+    .form-control:focus {
+      border-color: #28a745;
+      box-shadow: 0 0 0 0.2rem rgba(40,167,69,0.2);
+    }
+    .input-group-text {
+      border-radius: 12px 0 0 12px;
+      border: 1.5px solid #e0e0e0;
+      background: #f8f9fa;
+    }
+    .form-label {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #333;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 1.25rem 0;
+      color: #adb5bd;
+      font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e9ecef;
+    }
+    .divider span {
+      padding: 0 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="logo-wrap">
+      <img src="assets/images/logo.png" alt="CF Foods and Beverages Logo">
+      <div class="store-name">CF Foods and Beverages</div>
+      <div class="store-meta">
+        Nkwo Okija, Ihiala LGA, Anambra State<br>
+        <i class="fas fa-phone-alt me-1"></i> 08062686710
+      </div>
+    </div>
+
+    <div id="alertBox" class="alert d-none py-2" role="alert"></div>
+
+    <div id="loginSection">
+      <form id="loginForm">
+        <div class="mb-3">
+          <label class="form-label">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-envelope text-muted"></i></span>
+            <input type="email" class="form-control" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+            <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+            <button class="btn btn-outline-secondary" type="button" id="togglePassword" style="border-radius:0 12px 12px 0; border:1.5px solid #e0e0e0;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="rememberMe">
+            <label class="form-check-label small" for="rememberMe">Remember me</label>
+          </div>
+          <a href="#" class="small text-success text-decoration-none fw-semibold" id="showReset">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-login" id="loginBtn">
+          <i class="fas fa-sign-in-alt me-2"></i> Sign In
+        </button>
+      </form>
+    </div>
+
+    <div id="resetSection" class="d-none">
+      <p class="text-muted small mb-3 text-center">
+        Enter your email address and we will send you a link to reset your password.
+      </p>
+      <form id="resetForm">
+        <div class="mb-3">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-control" id="resetEmail" placeholder="you@example.com" required>
+        </div>
+        <button type="submit" class="btn btn-login mb-2" id="resetBtn">
+          <i class="fas fa-paper-plane me-2"></i> Send Reset Link
+        </button>
+        <button type="button" class="btn btn-outline-secondary w-100" id="backToLogin" style="border-radius:12px;">
+          <i class="fas fa-arrow-left me-1"></i> Back to Login
+        </button>
+      </form>
+    </div>
+
+    <div class="divider"><span>Secure Cloud System</span></div>
+    <p class="text-center text-muted small mb-0">
+      Powered by <strong>ProvisionHub</strong>
+    </p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        window.location.href = 'dashboard.html';
+      }
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error === 'inactive') {
+      showAlert('Your account has been deactivated. Contact an administrator.', 'danger');
+    } else if (error === 'no_profile') {
+      showAlert('User profile not found. Contact an administrator.', 'danger');
+    }
+
+    function showAlert(message, type = 'danger') {
+      const box = document.getElementById('alertBox');
+      box.className = 'alert alert-' + type + ' py-2';
+      box.textContent = message;
+      box.classList.remove('d-none');
+    }
+
+    function hideAlert() {
+      document.getElementById('alertBox').classList.add('d-none');
+    }
+
+    document.getElementById('togglePassword').addEventListener('click', function () {
+      const input = document.getElementById('loginPassword');
+      const icon = this.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    });
+
+    document.getElementById('showReset').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('loginSection').classList.add('d-none');
+      document.getElementById('resetSection').classList.remove('d-none');
+      hideAlert();
+    });
+
+    document.getElementById('backToLogin').addEventListener('click', () => {
+      document.getElementById('resetSection').classList.add('d-none');
+      document.getElementById('loginSection').classList.remove('d-none');
+      hideAlert();
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+      const btn = document.getElementById('loginBtn');
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
+
+      const result = await Auth.login(email, password);
+
+      if (result.success) {
+        window.location.href = 'dashboard.html';
+      } else {
+        showAlert(result.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i> Sign In';
+      }
+    });
+
+    document.getElementById('resetForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+      const btn = document.getElementById('resetBtn');
+      const email = document.getElementById('resetEmail').value.trim();
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+      const result = await Auth.resetPassword(email);
+
+      if (result.success) {
+        showAlert(result.message, 'success');
+      } else {
+        showAlert(result.message, 'danger');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Send Reset Link';
+    });
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").then(function(reg) {
+        console.log("SW registered", reg.scope);
+      }).catch(function(err) {
+        console.log("SW registration failed", err);
+      });
+    }
+  </script>
+</body>
+</html>

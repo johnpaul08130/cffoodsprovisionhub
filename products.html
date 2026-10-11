@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products - CF Food and Beverages</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <style>
+    .product-thumb {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #f0f0f0;
+    }
+    .product-thumb-placeholder {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: #e9ecef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #adb5bd;
+    }
+  </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#28a745">
+</head>
+<body>
+  <div id="app">
+    <div id="content" style="display:none;">
+      <!-- Header -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+          <h5 class="mb-0">Products</h5>
+          <small class="text-muted">Manage your product catalog</small>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#categoriesModal">
+            <i class="fas fa-tags me-1"></i> Categories
+          </button>
+          <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#productModal" onclick="openAddProduct()">
+            <i class="fas fa-plus me-1"></i> Add Product
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="table-card mb-4">
+        <div class="p-3">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search name, SKU, barcode...">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select" id="filterCategory">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select" id="filterStatus">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="">All Status</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select" id="filterStock">
+                <option value="">All Stock</option>
+                <option value="low">Low Stock</option>
+                <option value="out">Out of Stock</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                <i class="fas fa-redo me-1"></i> Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Table -->
+      <div class="table-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-box me-2"></i>Product List <span class="badge bg-secondary ms-1" id="productCount">0</span></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead>
+              <tr>
+                <th style="width:60px">Image</th>
+                <th>Name</th>
+                <th>SKU / Barcode</th>
+                <th>Category</th>
+                <th>Cost</th>
+                <th>Selling</th>
+                <th>Qty</th>
+                <th>Stock</th>
+                <th>Expiry</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <tr>
+                <td colspan="10" class="text-center py-5 text-muted">
+                  <div class="spinner-border spinner-border-sm me-2"></div> Loading products...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PRODUCT MODAL ==================== -->
+  <div class="modal fade" id="productModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="productModalTitle">Add Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="productAlert" class="alert d-none"></div>
+          <form id="productForm">
+            <input type="hidden" id="productId">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Product Name *</label>
+                <input type="text" class="form-control" id="productName" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="productStatus">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">SKU</label>
+                <input type="text" class="form-control" id="productSku">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Barcode</label>
+                <input type="text" class="form-control" id="productBarcode">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Brand</label>
+                <input type="text" class="form-control" id="productBrand">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="productCategory">
+                  <option value="">— Select —</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Unit</label>
+                <select class="form-select" id="productUnit">
+                  <option value="pcs">Pieces (pcs)</option>
+                  <option value="carton">Carton</option>
+                  <option value="half">1/2 (Half)</option>
+                  <option value="pack">Pack</option>
+                  <option value="dozen">Dozen</option>
+                  <option value="bag">Bag</option>
+                  <option value="kg">Kilogram (kg)</option>
+                  <option value="g">Gram (g)</option>
+                  <option value="litre">Litre</option>
+                  <option value="ml">Millilitre (ml)</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Expiry Date</label>
+                <input type="date" class="form-control" id="productExpiry">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Cost Price (₦) *</label>
+                <input type="number" class="form-control" id="productCost" min="0" step="0.01" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Selling Price (₦) *</label>
+                <input type="number" class="form-control" id="productSelling" min="0" step="0.01" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Wholesale Price (₦)</label>
+                <input type="number" class="form-control" id="productWholesale" min="0" step="0.01">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Min. Stock Level</label>
+                <input type="number" class="form-control" id="productMinStock" min="0" value="10">
+              </div>
+              <div class="col-md-4" id="quantityField">
+                <label class="form-label">Initial Quantity</label>
+                <input type="number" class="form-control" id="productQty" min="0" value="0">
+                <div class="form-text">Use Inventory module for later stock changes</div>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" id="productDesc" rows="2"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Product Image</label>
+                <input type="file" class="form-control" id="productImage" accept="image/*">
+                <div class="form-text">Max 5MB. JPG, PNG, WebP</div>
+              </div>
+              <div class="col-md-6" id="currentImagePreview" style="display:none;">
+                <label class="form-label">Current Image</label>
+                <div>
+                  <img id="currentImage" src="" class="rounded" style="max-height:80px;">
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success" id="saveProductBtn">
+            <i class="fas fa-save me-1"></i> Save Product
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CATEGORIES MODAL ==================== -->
+  <div class="modal fade" id="categoriesModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Manage Categories</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Add Category Form -->
+          <form id="categoryForm" class="mb-4">
+            <div class="input-group">
+              <input type="text" class="form-control" id="categoryName" placeholder="New category name" required>
+              <button class="btn btn-success" type="submit">
+                <i class="fas fa-plus"></i> Add
+              </button>
+            </div>
+          </form>
+          <div id="categoryAlert" class="alert d-none"></div>
+          <ul class="list-group" id="categoriesList">
+            <li class="list-group-item text-muted text-center">Loading...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/products.js"></script>
+  <script>
+    let editingProductId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.init(); // any logged-in role can view
+      Layout.render('products');
+      Layout.setPageTitle('Products');
+      await loadAll();
+    });
+
+    async function loadAll() {
+      try {
+        await Products.loadCategories();
+        await Products.loadProducts();
+        populateCategorySelects();
+        renderCategoriesList();
+        renderProducts();
+      } catch (error) {
+        document.getElementById('productsTableBody').innerHTML = `
+          <tr><td colspan="10" class="text-center text-danger py-4">Failed to load data. Check console.</td></tr>`;
+      }
+    }
+
+    function populateCategorySelects() {
+      const options = Products.allCategories
+        .filter(c => c.status === 'active')
+        .map(c => `<option value="${c.id}">${c.name}</option>`)
+        .join('');
+
+      document.getElementById('filterCategory').innerHTML =
+        '<option value="">All Categories</option>' + options;
+      document.getElementById('productCategory').innerHTML =
+        '<option value="">— Select —</option>' + options;
+    }
+
+    function renderProducts() {
+      const list = Products.getFilteredProducts();
+      document.getElementById('productCount').textContent = list.length;
+      const tbody = document.getElementById('productsTableBody');
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-5">No products found</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(p => {
+        const img = p.imageUrl
+          ? `<img src="${p.imageUrl}" class="product-thumb" alt="">`
+          : `<div class="product-thumb-placeholder"><i class="fas fa-box"></i></div>`;
+
+        return `
+          <tr>
+            <td>${img}</td>
+            <td>
+              <div class="fw-semibold">${p.name}</div>
+              <small class="text-muted">${p.brand || ''}</small>
+            </td>
+            <td>
+              <div class="small">${p.sku || '—'}</div>
+              <div class="small text-muted">${p.barcode || ''}</div>
+            </td>
+            <td>${p.categoryName || '—'}</td>
+            <td>${Products.formatCurrency(p.costPrice)}</td>
+            <td>${Products.formatCurrency(p.sellingPrice)}</td>
+            <td class="fw-semibold">${p.quantity || 0} <small class="text-muted">${p.unit || ''}</small></td>
+            <td>${Products.getStockBadge(p)}</td>
+            <td>
+              ${Products.formatDate(p.expiryDate)}
+              ${Products.getExpiryBadge(p)}
+            </td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditProduct('${p.id}')" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p.id}', '${(p.name || '').replace(/'/g, "\\'")}')" 
+                      data-role="admin,manager" title="Deactivate">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      Auth.updateUI(); // re-apply role visibility
+    }
+
+    // Filters
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      Products.currentFilter.search = e.target.value;
+      renderProducts();
+    });
+    document.getElementById('filterCategory').addEventListener('change', (e) => {
+      Products.currentFilter.categoryId = e.target.value;
+      renderProducts();
+    });
+    document.getElementById('filterStatus').addEventListener('change', (e) => {
+      Products.currentFilter.status = e.target.value;
+      renderProducts();
+    });
+    document.getElementById('filterStock').addEventListener('change', (e) => {
+      Products.currentFilter.stock = e.target.value;
+      renderProducts();
+    });
+
+    function resetFilters() {
+      Products.currentFilter = { search: '', categoryId: '', status: 'active', stock: '' };
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterCategory').value = '';
+      document.getElementById('filterStatus').value = 'active';
+      document.getElementById('filterStock').value = '';
+      renderProducts();
+    }
+
+    // Product Modal
+    function openAddProduct() {
+      editingProductId = null;
+      document.getElementById('productModalTitle').textContent = 'Add Product';
+      document.getElementById('productForm').reset();
+      document.getElementById('productId').value = '';
+      document.getElementById('quantityField').style.display = 'block';
+      document.getElementById('currentImagePreview').style.display = 'none';
+      document.getElementById('productAlert').classList.add('d-none');
+      document.getElementById('productMinStock').value = 10;
+      document.getElementById('productQty').value = 0;
+    }
+
+    function openEditProduct(id) {
+      const p = Products.allProducts.find(x => x.id === id);
+      if (!p) return;
+
+      editingProductId = id;
+      document.getElementById('productModalTitle').textContent = 'Edit Product';
+      document.getElementById('productId').value = id;
+      document.getElementById('productName').value = p.name || '';
+      document.getElementById('productSku').value = p.sku || '';
+      document.getElementById('productBarcode').value = p.barcode || '';
+      document.getElementById('productBrand').value = p.brand || '';
+      document.getElementById('productCategory').value = p.categoryId || '';
+      document.getElementById('productUnit').value = p.unit || 'pcs';
+      document.getElementById('productCost').value = p.costPrice || 0;
+      document.getElementById('productSelling').value = p.sellingPrice || 0;
+      document.getElementById('productWholesale').value = p.wholesalePrice || 0;
+      document.getElementById('productMinStock').value = p.minimumStock || 10;
+      document.getElementById('productDesc').value = p.description || '';
+      document.getElementById('productStatus').value = p.status || 'active';
+      document.getElementById('quantityField').style.display = 'none'; // don't edit qty here
+
+      if (p.expiryDate) {
+        const d = p.expiryDate.toDate ? p.expiryDate.toDate() : new Date(p.expiryDate);
+        document.getElementById('productExpiry').value = d.toISOString().split('T')[0];
+      } else {
+        document.getElementById('productExpiry').value = '';
+      }
+
+      if (p.imageUrl) {
+        document.getElementById('currentImage').src = p.imageUrl;
+        document.getElementById('currentImagePreview').style.display = 'block';
+      } else {
+        document.getElementById('currentImagePreview').style.display = 'none';
+      }
+
+      document.getElementById('productAlert').classList.add('d-none');
+      new bootstrap.Modal(document.getElementById('productModal')).show();
+    }
+
+    document.getElementById('saveProductBtn').addEventListener('click', async () => {
+      const name = document.getElementById('productName').value.trim();
+      const cost = document.getElementById('productCost').value;
+      const selling = document.getElementById('productSelling').value;
+      const alertBox = document.getElementById('productAlert');
+
+      if (!name || !cost || !selling) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.textContent = 'Name, Cost Price and Selling Price are required.';
+        alertBox.classList.remove('d-none');
+        return;
+      }
+
+      const data = {
+        name,
+        sku: document.getElementById('productSku').value,
+        barcode: document.getElementById('productBarcode').value,
+        brand: document.getElementById('productBrand').value,
+        categoryId: document.getElementById('productCategory').value,
+        unit: document.getElementById('productUnit').value,
+        costPrice: cost,
+        sellingPrice: selling,
+        wholesalePrice: document.getElementById('productWholesale').value,
+        minimumStock: document.getElementById('productMinStock').value,
+        quantity: document.getElementById('productQty').value,
+        description: document.getElementById('productDesc').value,
+        status: document.getElementById('productStatus').value,
+        expiryDate: document.getElementById('productExpiry').value || null
+      };
+
+      const imageFile = document.getElementById('productImage').files[0] || null;
+      const btn = document.getElementById('saveProductBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+      let result;
+      if (editingProductId) {
+        result = await Products.updateProduct(editingProductId, data, imageFile);
+      } else {
+        result = await Products.createProduct(data, imageFile);
+      }
+
+      alertBox.className = `alert alert-${result.success ? 'success' : 'danger'}`;
+      alertBox.textContent = result.message;
+      alertBox.classList.remove('d-none');
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save me-1"></i> Save Product';
+
+      if (result.success) {
+        await Products.loadProducts();
+        renderProducts();
+        setTimeout(() => {
+          bootstrap.Modal.getInstance(document.getElementById('productModal'))?.hide();
+        }, 800);
+      }
+    });
+
+    async function deleteProduct(id, name) {
+      if (!confirm(`Deactivate product "${name}"?`)) return;
+      const result = await Products.deleteProduct(id, name);
+      alert(result.message);
+      if (result.success) {
+        await Products.loadProducts();
+        renderProducts();
+      }
+    }
+
+    // Categories
+    function renderCategoriesList() {
+      const list = document.getElementById('categoriesList');
+      if (Products.allCategories.length === 0) {
+        list.innerHTML = '<li class="list-group-item text-muted text-center">No categories yet</li>';
+        return;
+      }
+      list.innerHTML = Products.allCategories.map(c => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <span class="fw-semibold">${c.name}</span>
+            <span class="badge ${c.status === 'active' ? 'bg-success' : 'bg-secondary'} ms-2">${c.status}</span>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" data-role="admin">
+            <i class="fas fa-trash"></i>
+          </button>
+        </li>
+      `).join('');
+      Auth.updateUI();
+    }
+
+    document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('categoryName').value.trim();
+      if (!name) return;
+
+      const result = await Products.createCategory({ name });
+      const alertBox = document.getElementById('categoryAlert');
+      alertBox.className = `alert alert-${result.success ? 'success' : 'danger'} py-2`;
+      alertBox.textContent = result.message;
+      alertBox.classList.remove('d-none');
+
+      if (result.success) {
+        document.getElementById('categoryName').value = '';
+        await Products.loadCategories();
+        populateCategorySelects();
+        renderCategoriesList();
+      }
+    });
+
+    async function deleteCategory(id, name) {
+      if (!confirm(`Delete category "${name}"?`)) return;
+      const result = await Products.deleteCategory(id, name);
+      alert(result.message);
+      if (result.success) {
+        await Products.loadCategories();
+        populateCategorySelects();
+        renderCategoriesList();
+      }
+    }
+  </script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").then(function(reg) {
+      console.log("SW registered", reg.scope);
+    }).catch(function(err) {
+      console.log("SW registration failed", err);
+    });
+  }
+</script>
+</body>
+</html>
